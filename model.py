@@ -13,6 +13,8 @@ frame = cv2.resize(frame, (640,480))
 
 
 def main():
+    trajectory = []
+    
     with mp_hands.Hands(
         max_num_hands=2,
         min_detection_confidence=0.6,
@@ -24,6 +26,8 @@ def main():
             while  not success and attempt < 5:
                 success, img = vid.read()
                 attempt += 1
+            if not success:
+                break
             img = cv2.flip(img, 1)
             h, w, _ = img.shape
             rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -37,6 +41,22 @@ def main():
                         mp_hands.HAND_CONNECTIONS,
 
                     )
+                    thumb = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+                    X, Y = int(thumb.x * w), int(thumb.y * h)
+                    trajectory.append((X, Y))
+                    if len(trajectory) >= 2:
+                        (x1, y1) = trajectory[-2]
+                        (x2, y2) = trajectory[-1]
+                        dx = x2 - x1
+                        dy = y2 - y1
+                        velocity = (dx**2 + dy**2) ** 0.5
+                        print("Velocity:", velocity)
+                        if velocity < 5:
+                            print("Still")
+                        else:
+                            print("Moving")
+                    
+                    print(trajectory[-1])
                     finger_tips ={
                         "thumb": hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP],
                         "index": hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP],
@@ -64,6 +84,9 @@ def main():
                             -1
 
                         )
+
+
+
 
 
             cv2.imshow("Image", img)
